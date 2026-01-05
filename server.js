@@ -11,7 +11,7 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 5008;
+const PORT = process.env.PORT || 5009;
 mongoose.connect(
   process.env.MONGODB_URI
 );
