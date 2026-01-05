@@ -12,9 +12,7 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5009;
-mongoose.connect(
-  process.env.MONGODB_URI
-);
+mongoose.connect("mongodb+srv://arsalanali124000:KRLgAamhji0KBjD4@hlgjornayatf.juheqxn.mongodb.net/lead-validate");
 
 const validationRecordSchema = new mongoose.Schema({
   cid: { type: String, required: true, index: true },
@@ -455,7 +453,6 @@ app.get("/api/validation-result/:cid", async (req, res) => {
   }
 });
 
-
 app.post("/api/download-results", express.json(), (req, res) => {
   try {
     const { results, format = "csv", filter = "all", resultId } = req.body;
@@ -562,10 +559,10 @@ app.post("/api/download-results", express.json(), (req, res) => {
 });
 
 // if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "frontend/build")));
-  app.get(/^\/(?!api).*$/, (req, res) => {
-    res.sendFile(path.join(__dirname, "frontend/build", "index.html"));
-  });
+app.use(express.static(path.join(__dirname, "frontend/build")));
+app.get(/^\/(?!api).*$/, (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend/build", "index.html"));
+});
 // }
 app.use((err, req, res, next) => {
   console.error(err.stack);
