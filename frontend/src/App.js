@@ -24,7 +24,7 @@ import {
 import { saveAs } from "file-saver";
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5008/api";
+  process.env.REACT_APP_API_URL || "http://72.60.233.42:5009/api";
 
 const App = () => {
   const [file, setFile] = useState(null);
