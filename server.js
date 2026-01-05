@@ -12,7 +12,7 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5009;
-mongoose.connect("mongodb+srv://arsalanali124000:KRLgAamhji0KBjD4@hlgjornayatf.juheqxn.mongodb.net/lead-validate");
+mongoose.connect("mongodb+srv://arsalanali124000:LjVqN176LDr4QDhT@cluster0.nmpzmx5.mongodb.net/lead-validate");
 
 const validationRecordSchema = new mongoose.Schema({
   cid: { type: String, required: true, index: true },
