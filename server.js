@@ -329,6 +329,7 @@ app.post("/api/validate-tokens", upload.single("file"), async (req, res) => {
             trustedFormValid: trustedFormResult?.valid || false,
             jornayaResponse: jornayaResult,
             trustedFormResponse: trustedFormResult,
+            publisherName: publisherName,
             isValid,
             validationMessage,
             timestamp: new Date().toISOString(),
@@ -375,6 +376,7 @@ app.post("/api/validate-tokens", upload.single("file"), async (req, res) => {
           trustedFormValid: r.trustedFormValid,
           jornayaResponse: r.jornayaResponse,
           trustedFormResponse: r.trustedFormResponse,
+          publisherName: r.publisherName,
           isValid: r.isValid,
           validationMessage: r.validationMessage,
           timestamp: r.timestamp,
@@ -448,6 +450,7 @@ app.get("/api/validation-result/:cid", async (req, res) => {
       jornayaValid: record.jornayaValid,
       trustedFormValid: record.trustedFormValid,
       isValid: record.isValid,
+      publisherName: record.publisherName,
       validationMessage: record.validationMessage,
     });
   } catch (err) {

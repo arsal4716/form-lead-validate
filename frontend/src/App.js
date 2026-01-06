@@ -542,6 +542,7 @@ const App = () => {
                               title="Download all formats"
                             >
                               <i className="bi bi-download-all"></i>
+                              Download all formats
                             </Button>
                           </Col>
                         </Row>
