@@ -36,7 +36,7 @@ const App = () => {
   const [downloadFormat, setDownloadFormat] = useState("csv");
   const [stats, setStats] = useState(null);
   const [activeTab, setActiveTab] = useState("validate");
-  const [publisherName, setPublisherName] = useState("");
+  const [publisherName, setpublisherName] = useState("");
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
