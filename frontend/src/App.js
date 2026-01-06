@@ -52,8 +52,8 @@ const App = () => {
         return;
       }
 
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        toast.error("File size must be less than 10MB");
+      if (selectedFile.size > 100 * 1024 * 1024) {
+        toast.error("File size must be less than 100MB");
         e.target.value = "";
         return;
       }
