@@ -21,6 +21,7 @@ const validationRecordSchema = new mongoose.Schema({
   trustedFormValid: Boolean,
   isValid: Boolean,
   validationMessage: String,
+  publisherName: String,
 
   createdAt: { type: Date, default: Date.now, index: true },
 });
@@ -65,7 +66,7 @@ const upload = multer({
 });
 
 const COLUMN_MAPPINGS = {
-  CID: ["cid", "id", "customerid", "clientid", "leadid"],
+  CID: ["cid", "phoneNo", "phoneno", "phoneNumber", "phonenumber"],
   jornaya: [
     "jornaya",
     "leadidtoken",
@@ -389,6 +390,7 @@ app.post("/api/validate-tokens", upload.single("file"), async (req, res) => {
             jornayaValid: r.jornayaValid,
             trustedFormValid: r.trustedFormValid,
             isValid: r.isValid,
+            publisherName: r.publisherName,
             validationMessage: r.validationMessage,
             createdAt: new Date(r.timestamp),
           }))

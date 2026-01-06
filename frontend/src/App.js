@@ -35,8 +35,8 @@ const App = () => {
   const [downloadFilter, setDownloadFilter] = useState("all");
   const [downloadFormat, setDownloadFormat] = useState("csv");
   const [stats, setStats] = useState(null);
-  const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("validate");
+  const [publisherName, setPublisherName] = useState("");
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -73,6 +73,7 @@ const App = () => {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("publisherName", publisherName);
     formData.append("serviceType", serviceType);
     formData.append("saveToDB", saveToDB.toString());
 
@@ -347,6 +348,22 @@ const App = () => {
               <Card.Body>
                 <Form onSubmit={handleSubmit}>
                   <Row>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>
+                          Please Enter Valid Publisher Name
+                        </Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="publisherName"
+                          value={publisherName}
+                          onChange={(e) => setpublisherName(e.target.value)}
+                          required
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  <Row>
                     <Col md={6}>
                       <Form.Group className="mb-3">
                         <Form.Label>Select File (CSV or Excel)</Form.Label>
@@ -357,8 +374,12 @@ const App = () => {
                           required
                         />
                         <Form.Text className="text-muted">
-                          Maximum file size: 10MB. Supported columns: CID,
-                          jornaya/leadidtoken, tf/trustedform
+                          Maximum file size: 10MB. Supported columns: "cid",
+                          "phoneNumber",phonenumber, "phoneNo", "phoneno",
+                          "leadid", "jornaya", "leadidtoken", "leadid_token",
+                          "token", "leadid", "jornayatoken","trustedform", "tf",
+                          "certificate", "cert_url", "certid", "trusted_form",
+                          "certificate_url",
                         </Form.Text>
                       </Form.Group>
                     </Col>
@@ -401,8 +422,9 @@ const App = () => {
                   <Form.Group className="mb-3">
                     <Form.Check
                       type="checkbox"
-                      label="Save results to database"
+                      label="I Agree to Proceed"
                       checked={saveToDB}
+                      required
                       onChange={(e) => setSaveToDB(e.target.checked)}
                     />
                   </Form.Group>
