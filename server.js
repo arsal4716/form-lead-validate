@@ -12,7 +12,9 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5009;
-mongoose.connect("mongodb+srv://arsalanali124000:LjVqN176LDr4QDhT@cluster0.nmpzmx5.mongodb.net/lead-validate");
+mongoose.connect(
+  "mongodb+srv://arsalanali124000:LjVqN176LDr4QDhT@cluster0.nmpzmx5.mongodb.net/lead-validate"
+);
 
 const validationRecordSchema = new mongoose.Schema({
   cid: { type: String, required: true, index: true },
@@ -226,7 +228,11 @@ app.post("/api/validate-tokens", upload.single("file"), async (req, res) => {
     if (!req.body.serviceType) {
       return res.status(400).json({ error: "Service type is required" });
     }
+    const { publisherName } = req.body;
 
+    if (!publisherName) {
+      return res.status(400).json({ error: "Publisher name is required" });
+    }
     const serviceType = req.body.serviceType;
     const shouldSaveToDB = req.body.saveToDB === "true";
     let tokens = [];
