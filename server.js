@@ -218,7 +218,92 @@ const processExcel = (filePath) => {
     throw new Error(`Error reading Excel file: ${error.message}`);
   }
 };
+// single lead validate
+app.post("/api/validate-lead", async (req, res) => {
+  try {
+    const {
+      cid,
+      jornayaToken,
+      trustedFormToken,
+      serviceType = "both",
+      publisherName,
+      saveToDB = true,
+    } = req.body;
 
+    if (!cid) {
+      return res.status(400).json({ error: "CID is required" });
+    }
+
+    let jornayaResult = null;
+    let trustedFormResult = null;
+    let isValid = false;
+    let validationMessage = "";
+
+    if (serviceType === "jornaya" || serviceType === "both") {
+      if (jornayaToken) {
+        jornayaResult = await validateJornayaToken(jornayaToken);
+      }
+    }
+
+    if (serviceType === "trustedform" || serviceType === "both") {
+      if (trustedFormToken) {
+        trustedFormResult = await validateTrustedFormToken(trustedFormToken);
+      }
+    }
+
+    if (serviceType === "jornaya") {
+      isValid = jornayaResult?.valid || false;
+      validationMessage =
+        jornayaResult?.message || "No Jornaya token provided";
+    } else if (serviceType === "trustedform") {
+      isValid = trustedFormResult?.valid || false;
+      validationMessage =
+        trustedFormResult?.message || "No TrustedForm token provided";
+    } else {
+      const jornayaValid = jornayaResult?.valid || false;
+      const trustedFormValid = trustedFormResult?.valid || false;
+      isValid = jornayaValid && trustedFormValid;
+      validationMessage = `Jornaya: ${
+        jornayaValid ? "Valid" : "Invalid"
+      }, TrustedForm: ${trustedFormValid ? "Valid" : "Invalid"}`;
+    }
+
+    const result = {
+      cid: String(cid).trim(),
+      publisherName,
+      jornayaToken,
+      trustedFormToken,
+      jornayaValid: jornayaResult?.valid || false,
+      trustedFormValid: trustedFormResult?.valid || false,
+      validationMessage,
+      timestamp: new Date(),
+    };
+
+    if (saveToDB) {
+      await ValidationRecord.create({
+        cid: result.cid,
+        publisherName,
+        jornayaValid: result.jornayaValid,
+        trustedFormValid: result.trustedFormValid,
+        validationMessage,
+        createdAt: result.timestamp,
+      });
+    }
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Single lead validation error:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+    });
+  }
+});
+
+// file checking
 app.post("/api/validate-tokens", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
@@ -230,9 +315,6 @@ app.post("/api/validate-tokens", upload.single("file"), async (req, res) => {
     }
     const { publisherName } = req.body;
 
-    if (!publisherName) {
-      return res.status(400).json({ error: "Publisher name is required" });
-    }
     const serviceType = req.body.serviceType;
     const shouldSaveToDB = req.body.saveToDB === "true";
     let tokens = [];
