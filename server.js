@@ -63,12 +63,12 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 100 * 1024 * 1024,
   },
 });
 
 const COLUMN_MAPPINGS = {
-  CID: ["cid", "phoneNo", "phoneno", "phoneNumber", "phonenumber"],
+  CID: ["CID","cid","phoneNumber", "phonenumber", "phoneNo", "phoneno"],
   jornaya: [
     "jornaya",
     "leadidtoken",
@@ -253,8 +253,7 @@ app.post("/api/validate-lead", async (req, res) => {
 
     if (serviceType === "jornaya") {
       isValid = jornayaResult?.valid || false;
-      validationMessage =
-        jornayaResult?.message || "No Jornaya token provided";
+      validationMessage = jornayaResult?.message || "No Jornaya token provided";
     } else if (serviceType === "trustedform") {
       isValid = trustedFormResult?.valid || false;
       validationMessage =
@@ -548,103 +547,76 @@ app.get("/api/validation-result/:cid", async (req, res) => {
 
 app.post("/api/download-results", express.json(), (req, res) => {
   try {
-    const { results, format = "csv", filter = "all", resultId } = req.body;
+    const { results, format = "csv", filter = "all" } = req.body;
 
-    let dataToExport;
-    if (resultId) {
-      dataToExport = results;
-    } else {
-      if (!results || !Array.isArray(results)) {
-        return res.status(400).json({ error: "No results data provided" });
-      }
-      dataToExport = results;
-    }
-    if (filter === "valid") {
-      dataToExport = dataToExport.filter((r) => r.isValid);
-    } else if (filter === "invalid") {
-      dataToExport = dataToExport.filter((r) => !r.isValid);
+    if (!results || !Array.isArray(results) || results.length === 0) {
+      return res.status(400).json({ error: "No results data provided" });
     }
 
-    if (!dataToExport.length) {
-      return res.status(400).json({ error: "No data to export" });
-    }
+    // Filter results
+    let dataToExport = results;
+    if (filter === "valid") dataToExport = dataToExport.filter(r => r.isValid);
+    if (filter === "invalid") dataToExport = dataToExport.filter(r => !r.isValid);
 
-    let fileName = `validation-results-${filter}-${Date.now()}`;
-    let fileContent;
+    if (!dataToExport.length)
+      return res.status(400).json({ error: "No data to export after filtering" });
+
+    const fileName = `validation-results-${filter}-${Date.now()}`;
+
+    const flattenedResults = dataToExport.map(result => ({
+      ...result.originalRow,
+      _Jornaya_Token: result.jornayaToken || "",
+      _TrustedForm_Token: result.trustedFormToken || "",
+      _Jornaya_Valid: result.jornayaValid ? "Yes" : "No",
+      _TrustedForm_Valid: result.trustedFormValid ? "Yes" : "No",
+      _Overall_Valid: result.isValid ? "Yes" : "No",
+      _Validation_Message: result.validationMessage || "",
+      _Timestamp: result.timestamp || new Date().toISOString(),
+    }));
 
     if (format === "csv") {
-      fileName += ".csv";
-      const flattenedResults = dataToExport.map((result) => ({
-        CID: result.CID,
-        Jornaya_Token: result.jornayaToken || "",
-        TrustedForm_Token: result.trustedFormToken || "",
-        Jornaya_Valid: result.jornayaValid ? "Yes" : "No",
-        TrustedForm_Valid: result.trustedFormValid ? "Yes" : "No",
-        Overall_Valid: result.isValid ? "Yes" : "No",
-        Validation_Message: result.validationMessage || "",
-        Timestamp: result.timestamp || new Date().toISOString(),
-        ...result.originalRow,
-      }));
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}.csv"`);
 
       const headers = Object.keys(flattenedResults[0]);
-      const csvRows = flattenedResults.map((row) =>
-        headers
-          .map((header) => {
-            const value = row[header] !== undefined ? row[header] : "";
-            return `"${String(value).replace(/"/g, '""')}"`;
-          })
-          .join(",")
-      );
+      res.write(headers.join(",") + "\n");
 
-      fileContent = [headers.join(","), ...csvRows].join("\n");
-      res.setHeader("Content-Type", "text/csv");
-    } else if (format === "excel") {
-      fileName += ".xlsx";
+      for (const row of flattenedResults) {
+        const rowStr = headers
+          .map(h => `"${String(row[h] ?? "").replace(/"/g, '""')}"`)
+          .join(",");
+        res.write(rowStr + "\n");
+      }
+      return res.end();
+    }
 
-      const flattenedResults = dataToExport.map((result) => ({
-        CID: result.CID,
-        Jornaya_Token: result.jornayaToken || "",
-        TrustedForm_Token: result.trustedFormToken || "",
-        Jornaya_Valid: result.jornayaValid ? "Yes" : "No",
-        TrustedForm_Valid: result.trustedFormValid ? "Yes" : "No",
-        Overall_Valid: result.isValid ? "Yes" : "No",
-        Validation_Message: result.validationMessage || "",
-        Timestamp: result.timestamp || new Date().toISOString(),
-      }));
-
+    if (format === "excel") {
       const worksheet = XLSX.utils.json_to_sheet(flattenedResults);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Validation Results");
-      const maxWidth = flattenedResults.reduce(
-        (w, r) => Math.max(w, r.Validation_Message?.length || 0),
-        10
+
+      const maxColWidths = Object.keys(flattenedResults[0]).map(key =>
+        Math.max(key.length, ...flattenedResults.map(r => String(r[key] ?? "").length))
       );
-      worksheet["!cols"] = [
-        { wch: 20 },
-        { wch: 40 },
-        { wch: 40 },
-        { wch: 15 },
-        { wch: 20 },
-        { wch: 15 },
-        { wch: maxWidth },
-        { wch: 25 },
-      ];
+      worksheet["!cols"] = maxColWidths.map(w => ({ wch: w + 5 }));
 
       const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-      fileContent = buffer;
 
       res.setHeader(
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       );
-    } else if (format === "json") {
-      fileName += ".json";
-      fileContent = JSON.stringify(dataToExport, null, 2);
-      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}.xlsx"`);
+      return res.send(buffer);
     }
 
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    res.send(fileContent);
+    if (format === "json") {
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}.json"`);
+      return res.send(JSON.stringify(flattenedResults, null, 2));
+    }
+
+    return res.status(400).json({ error: "Unsupported format" });
   } catch (error) {
     console.error("Download error:", error);
     res.status(500).json({ error: "Error generating download file" });
